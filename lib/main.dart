@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:alcohol_knowlege/screen/screen_corkage_store.dart';
-import 'package:alcohol_knowlege/screen/screen_home.dart';
+import 'package:alcohol_knowledge_frontend/screen/screen_corkage_store.dart';
+import 'package:alcohol_knowledge_frontend/screen/screen_home.dart';
 import 'package:flutter/material.dart';
 
 

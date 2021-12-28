@@ -1,6 +1,6 @@
-import 'package:alcohol_knowlege/model/api_adapter.dart';
-import 'package:alcohol_knowlege/model/model_wineinfo.dart';
-import 'package:alcohol_knowlege/screen/screen_wineinfo_form.dart';
+import 'package:alcohol_knowledge_frontend/model/api_adapter.dart';
+import 'package:alcohol_knowledge_frontend/model/model_wineinfo.dart';
+import 'package:alcohol_knowledge_frontend/screen/screen_wineinfo_form.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';

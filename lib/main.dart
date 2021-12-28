@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp>{
   ];
   List pages=[
     HomeScreen(),
-    CorkageStore(),
+    CorkageStoreScreen(),
     Container(
       child: Text('설정 페이지'),
     ),

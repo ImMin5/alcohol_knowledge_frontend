@@ -4,6 +4,7 @@
 
 import 'package:alcohol_knowledge_frontend/screen/screen_corkage_store.dart';
 import 'package:alcohol_knowledge_frontend/screen/screen_home.dart';
+import 'package:alcohol_knowledge_frontend/screen/screen_wineinfo_form.dart';
 import 'package:flutter/material.dart';
 
 
@@ -38,7 +39,7 @@ class _MyAppState extends State<MyApp>{
     CorkageStore(),
     Container(
       child: Text('설정 페이지'),
-    )
+    ),
   ];
 
   @override

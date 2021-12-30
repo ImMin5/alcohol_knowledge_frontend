@@ -19,11 +19,12 @@ class _HomeScreenState extends State<HomeScreen>{
   // wineinfo의 데이터를 저장하기 위한 리스트
   List<WineInfo> wineInfos =[];
   bool isLoading = false, allLoaded = false;
+  //
 
   @override
   void initState(){
     super.initState();
-    _fetchWineInfos();
+    fetchWineInfos();
   }
 
   @override
@@ -35,18 +36,13 @@ class _HomeScreenState extends State<HomeScreen>{
     return MaterialApp(
         debugShowCheckedModeBanner: false,
         home : Scaffold(
-          body : _Body(),
+          body : body(),
         )
     );
   }
 
-  //상단 앱바
-  Widget _AppBar(){
-    return AppBar(leading: Icon(Icons.list),title : Text('Alchol-Knowlege'));
-  }
-
   // 검색창
-  Widget _SearchInput(){
+  Widget searchInput(){
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: TextField(
@@ -64,31 +60,26 @@ class _HomeScreenState extends State<HomeScreen>{
   }
 
   //메인페이지 body부분
-  Widget _Body(){
-    return Container(
+  Widget body(){
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
       child: Column(
         children: <Widget>[
-          _SearchInput(),
+          searchInput(),
           Container(
             child: ElevatedButton(
               child: Text('와인 구매정보 입력'),
-              onPressed: () {
-                Navigator.push(
-                  context, MaterialPageRoute(builder: (context) =>
-                    WineInfoFormScreen()),
-                );
+              onPressed: () async {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => WineInfoFormScreen())
+                ).then((context) => fetchWineInfos());
               },
 
             ),
           ),
           SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child:SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: _getDataTable(),
+            scrollDirection: Axis.horizontal,
+            child: getDataTable(),
               )
-
-          ),
         ],
       ),
     );
@@ -96,23 +87,20 @@ class _HomeScreenState extends State<HomeScreen>{
 
 
   //wineinfo의 정보를 가져옴
-  _fetchWineInfos() async {
+  fetchWineInfos() async {
     setState(() {
       isLoading = true;
     });
-    print('button push');
-    final response = await http.get('http://localhost:8080/api/json',
+    final response = await http.get('http://localhost:8080/api/wineinfo',
         headers: {
           "Accept" : "application/json",
           "Access-Control-Allow-Origin" :  "*"
         });
     if(response.statusCode == 200){
-      print('button push2');
       setState(() {
-        print('button push3');
         wineInfos = parseWineInfos(utf8.decode(response.bodyBytes));
-        //print(wineInfos[0].nameEng);
         isLoading = false;
+        print("winewinfos is loading");
       });
     }
     else{
@@ -122,21 +110,22 @@ class _HomeScreenState extends State<HomeScreen>{
   }
 
   //메인화면 데이터테이
-  Widget _getDataTable() {
+  Widget getDataTable() {
     return DataTable(
       horizontalMargin: 1.0, columnSpacing: 28.0,
-      columns: _getColumns(),showCheckboxColumn: true,
-      rows: _getRows(), );
+      columns: getColumns(),showCheckboxColumn: true,
+      rows: getRows(), );
 
   }
   //테이블 row 생성
-  List<DataRow> _getRows(){
+  List<DataRow> getRows(){
     List<DataRow> dataRow = [];
     for (var i=0; i<wineInfos.length; i++) {
       List<DataCell> cells = [];
-      cells.add(DataCell(Text(wineInfos[i].nameEng+' '+wineInfos[i].nameKor)));
+      cells.add(DataCell(Text(wineInfos[i].nameEng+'\n'+wineInfos[i].nameKor)));
       cells.add(DataCell(Text('${wineInfos[i].vintage}')));
       cells.add(DataCell(Text('${wineInfos[i].price}')));
+      cells.add(DataCell(Text(wineInfos[i].sizeBottle+' ml')));
       cells.add(DataCell(Text(wineInfos[i].region + ' '+ wineInfos[i].store)));
       cells.add(DataCell(Text('${wineInfos[i].datePurchase}')));
       cells.add(DataCell(Text(wineInfos[i].description)));
@@ -146,11 +135,12 @@ class _HomeScreenState extends State<HomeScreen>{
   }
 
   //태아불의 헤더
-  List<DataColumn> _getColumns(){
+  List<DataColumn> getColumns(){
     List<DataColumn> dataColumn = [];
     dataColumn.add(DataColumn(label: Text('이름')));
     dataColumn.add(DataColumn(label: Text('빈티지'), numeric: true, ));
     dataColumn.add(DataColumn(label: Text('가격'), numeric: true, ));
+    dataColumn.add(DataColumn(label: Text('용량'), numeric: true, ));
     dataColumn.add(DataColumn(label: Text('구매장소')));
     dataColumn.add(DataColumn(label: Text('구매일')));
     dataColumn.add(DataColumn(label: Text('설명')));

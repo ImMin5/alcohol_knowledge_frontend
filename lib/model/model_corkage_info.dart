@@ -1,7 +1,7 @@
 class CorkageInfo {
   int id;
   String desc;
-  int isChecked;
+  int isChecked = 0;
   String addr;
   String dateCreate;
   String user;

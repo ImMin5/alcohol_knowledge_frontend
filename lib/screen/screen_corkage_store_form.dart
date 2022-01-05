@@ -24,7 +24,14 @@ class _CorkageStoreForm extends State<CorkageStoreForm> {
     // TODO: implement build
     return MaterialApp(
         home:Scaffold(
-        appBar: AppBar(leading: Icon(Icons.list),title : Text('Alchol-Knowlege')),
+        appBar: AppBar(
+            leading: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(Icons.arrow_back),
+            ),
+            title : Text('Alchol-Knowlege')),
         body: _Form()
         ),
     );

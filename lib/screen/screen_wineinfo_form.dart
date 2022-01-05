@@ -17,7 +17,7 @@ class WineInfoFormScreen extends StatelessWidget{
 
   @override
   Widget build(BuildContext context) {
-
+    print('wineinfoform page build');
     final formKey = GlobalKey<FormState>();
     bool validForm = false;
 

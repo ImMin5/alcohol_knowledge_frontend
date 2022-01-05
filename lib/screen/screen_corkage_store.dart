@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:alcohol_knowledge_frontend/model/model_corkage_store.dart';
+import 'package:alcohol_knowledge_frontend/screen/screen_corkage_detail.dart';
 import 'package:alcohol_knowledge_frontend/screen/screen_corkage_store_form.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +83,7 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
   }
   Widget _getDataTable() {
     return DataTable(
+        showCheckboxColumn: false,
         columns: const [
           DataColumn(label: Text('#')),
           DataColumn(label: Text('매장명')),
@@ -114,11 +116,16 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
     List<DataRow> dataRow = [];
     for (var i=0; i < ckStoreList.length; i++) {
       List<DataCell> cells = [];
-      cells.add(DataCell(Text('${ckStoreList[i].id}')));
+      cells.add(DataCell(Text('${ckStoreList[i].id}'),));
       cells.add(DataCell(Text(ckStoreList[i].name)));
       cells.add(DataCell(Text(ckStoreList[i].addr)));
       cells.add(DataCell(Text(ckStoreList[i].desc)));
-      dataRow.add(DataRow(cells: cells));
+      dataRow.add(DataRow(cells: cells,
+      onSelectChanged: (selected) {
+        Navigator.push(context, MaterialPageRoute(builder: (context)
+        => StoreDetailScreen(ckStoreList[i].id))
+        );
+      }),);
     }
     return dataRow;
   }

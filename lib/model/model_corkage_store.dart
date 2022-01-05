@@ -13,6 +13,18 @@ class CorkageStore {
   CorkageStore(this.id, this.name, this.addr, this.area, this.longitude,
       this.latitude, this.desc, this.dateUpdate, this.website, this.instagram);
 
+  CorkageStore.empty()
+  : id = 0,
+    name = '',
+    addr = '',
+    area = '',
+    longitude = 0,
+    latitude = 0,
+    desc = '',
+    dateUpdate = '',
+    website = '',
+    instagram = '';
+
   // factory 생성자. CorkageStore 인스턴스 반환
   factory CorkageStore.fromJson(Map<String, dynamic> json) {
     return CorkageStore(

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:alcohol_knowledge_frontend/model/api_adapter.dart';
 import 'package:alcohol_knowledge_frontend/model/model_wineinfo.dart';
 import 'package:alcohol_knowledge_frontend/screen/screen_wineinfo_form.dart';
@@ -7,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:core';
+
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -16,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
+
   // 검색창의 텍스트를 위한 변수
   final TextEditingController searchWord = TextEditingController();
   FocusNode focusNode = FocusNode();
@@ -23,16 +24,49 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // wineinfo의 데이터를 저장하기 위한 리스트
   late Future<List<WineInfo>> wineInfos;
+  List<WineInfo> tempList =[];
 
   //데이터 테이블 칼럼 인덳스
   int? sortColumnIndex;
   bool isAscending = false;
 
+  //pagination
+  final int pageSize = 3;
+  int pageIndex= 0;
+  bool isPage = true;
+
+  //스크롤 컨트롤러
+  late ScrollController _controller;
+  int offset=0;
+
+
+
   @override
   void initState() {
     print('hompage init');
-    wineInfos = fetchWineInfos();
+    wineInfos = pageWineInfos(tempList);
+    _controller = ScrollController();
+    _controller.addListener(_scrollListener);
     super.initState();
+  }
+
+  _scrollListener(){
+    if (_controller.offset >= _controller.position.maxScrollExtent &&
+        !_controller.position.outOfRange) {
+      if(isPage == false) return;
+      setState(() {
+        wineInfos = pageWineInfos(tempList);
+      });
+
+    }
+    /* 스크롤이 상단에 닿을때
+    if (_controller.offset <= _controller.position.minScrollExtent &&
+        !_controller.position.outOfRange) {
+      setState(() {
+        print("reach the top");
+      });
+    }
+    */
   }
 
   @override
@@ -50,6 +84,42 @@ class _HomeScreenState extends State<HomeScreen> {
         ));
   }
 
+
+  //pageSize의 수 만큼 wineinfo 가져옴
+   Future<List<WineInfo>> pageWineInfos(List<WineInfo> originList) async{
+     var queryParameters = {
+       'pageIndex': pageIndex,
+       'pageSize': pageSize,
+     };
+     if(isPage){
+       final response = await http.get('http://localhost:8080/api/wineinfo/pagination?pageIndex=${pageIndex}&pageSize=${pageSize}',
+           headers: {
+             "Accept" : "application/json",
+             "Access-Control-Allow-Origin": "*"
+           });
+       List<WineInfo> list;
+       if(response.statusCode == 200){
+         tempList.addAll(parseWineInfos(utf8.decode(response.bodyBytes)).toList());
+         if(pageIndex == tempList.length){
+           isPage = false;
+         }
+         pageIndex = tempList.length;
+         for(var i in tempList){
+           print(i.nameKor);
+         }
+         return tempList;
+       }
+       else{
+         print('failed fetchWineInfos');
+         throw Exception('failed to load data pagination');
+       }
+     }
+     else{
+       print('empty');
+       return tempList;
+     }
+  }
+
   //wineinfo의 정보를 가져옴
   Future<List<WineInfo>> fetchWineInfos() async {
     final response = await http.get('http://localhost:8080/api/wineinfo',
@@ -59,7 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
         });
     if (response.statusCode == 200) {
       print("winewinfos is loading");
-      return parseWineInfos(utf8.decode(response.bodyBytes));
+      tempList = parseWineInfos(utf8.decode(response.bodyBytes));
+      return tempList;
     } else {
       print('failed fetchWineInfos');
       throw Exception('failed to load data');
@@ -77,8 +148,8 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
     if (response.statusCode == 200) {
-      //wineInfos = parseWineInfos(utf8.decode(response.bodyBytes));
-      return parseWineInfos(utf8.decode(response.bodyBytes));
+      tempList = parseWineInfos(utf8.decode(response.bodyBytes));
+      return tempList;
       isLoading = false;
     } else {
       print('failed searchWineInfos');
@@ -114,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
           print(searchWord.text);
           setState(() {
             wineInfos = searchWineInfos();
+            pageIndex = tempList.length;
           });
         },
       ),
@@ -123,34 +195,45 @@ class _HomeScreenState extends State<HomeScreen> {
   //메인페이지 body부분
   Widget body() {
     print('home page body build');
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: Column(
-        children: <Widget>[
-          searchInput(),
-          Container(
-            child: ElevatedButton(
-              child: Text('와인 구매정보 입력'),
-              onPressed: () async {
-                await Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => WineInfoFormScreen()))
-                    .then((value) {
-                      setState(() {
-                        print(value);
-                        print('after wineinfoform');
-                        wineInfos = fetchWineInfos();
-                        Duration(milliseconds: 10);
-                  });
-                });
-              },
+    return  SingleChildScrollView(
+        controller: _controller,
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        scrollDirection: Axis.vertical,
+        child: Column(
+          children: <Widget>[
+            searchInput(),
+            ElevatedButton(
+                onPressed: () async
+                { setState(() {
+                  wineInfos = pageWineInfos(tempList);
+                });},
+                child: Text('데이터 불러오기기')
             ),
-          ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: getDataTable(),
-          ),
-        ],
-      ),
+            Container(
+              child: ElevatedButton(
+                child: Text('와인 구매정보 입력'),
+                onPressed: () async {
+                  await Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => WineInfoFormScreen()))
+                      .then((value) {
+                        setState(() {
+                          print(value);
+                          print('after wineinfoform');
+                          wineInfos = fetchWineInfos();
+                          Duration(milliseconds: 10);
+                    });
+                  });
+                },
+              ),
+            ),
+
+                  SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: getDataTable(),
+                  )
+
+          ],
+        ),
     );
   }
 
@@ -158,30 +241,36 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget getDataTable() {
     print('home page table build');
     final columns = ['이름', '빈티지', '가격', '용량' '구매장소', '구매일', '설명'];
-    return FutureBuilder(
-        future: wineInfos,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            if (snapshot.hasData) {
-              return DataTable(
-                columnSpacing: 60,
-                horizontalMargin: 1.0,
-                sortAscending: isAscending,
-                sortColumnIndex: sortColumnIndex,
-                columns: getColumns((snapshot.data), columns),
-                rows: getRows(snapshot.data),
-              );
-            } else if (snapshot.hasError) {
-              return Text('${snapshot.error}');
+    return Center(
+      child: FutureBuilder(
+          initialData: [],
+          future: wineInfos,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              if (snapshot.hasData) {
+                    return DataTable(
+                      columnSpacing: 60,
+                      horizontalMargin: 1.0,
+                      sortAscending: isAscending,
+                      sortColumnIndex: sortColumnIndex,
+                      columns: getColumns((snapshot.data), columns),
+                      rows: getRows(snapshot.data),
+                    );
+              } else if (snapshot.hasError) {
+                return Text('${snapshot.error}');
+              }
             }
-          }
-          return const CircularProgressIndicator();
-        });
+            return const CircularProgressIndicator();
+          }),
+    );
   }
+
 
   //테이블 row 생성
   List<DataRow> getRows(data) {
     List<DataRow> dataRow = [];
+    print("row start");
+    print("row end");
 
     for (var i = 0; i < data.length; i++) {
       List<DataCell> cells = [];
@@ -200,7 +289,6 @@ class _HomeScreenState extends State<HomeScreen> {
   //태아불의 헤더
   List<DataColumn> getColumns(data, List<String> columns) {
     List<DataColumn> dataColumn = [];
-
     dataColumn.add(DataColumn(
         label: Text('이름'),
         onSort: (columnIndex, ascending) {
@@ -220,8 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onSort: (columnIndex, ascending) {
           if (columnIndex == 1) {
             setState(() {
-              data.sort(
-                  (a, b) => compareInteger(ascending, a.vintage, b.vintage));
+              data.sort((a, b) => compareInteger(ascending, a.vintage, b.vintage));
               this.sortColumnIndex = columnIndex;
               this.isAscending = ascending;
             });
@@ -266,30 +353,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return dataColumn;
   }
 
+  //문자열 정렬
   int compareString(bool ascending, String value1, String value2) =>
       ascending ? value1.compareTo(value2) : value2.compareTo(value1);
-
+  //정수 정렬
   int compareInteger(bool ascending, int value1, int value2) =>
       ascending ? value1.compareTo(value2) : value2.compareTo(value1);
-
-  //메인페이지 하단바
-  Widget _BottomAppBar() {
-    return BottomAppBar(
-      child: SizedBox(
-        height: 70,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(Icons.home),
-            Icon(Icons.wine_bar),
-            Icon(Icons.settings_rounded),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 //Scaffold 상중하로 나누어줌
 //AppBar 상단
+

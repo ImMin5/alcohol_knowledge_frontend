@@ -9,9 +9,7 @@ import 'dart:core';
 
 class HomeScreen extends StatefulWidget {
   @override
-  createState() {
-    return _HomeScreenState();
-  }
+  createState() {return _HomeScreenState();}
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -36,8 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isPage = true;
 
   //스크롤 컨트롤러
-  late ScrollController _controller;
-  int offset=0;
+  late ScrollController scrollController;
+  double offset=0;
 
 
 
@@ -45,28 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     print('hompage init');
     wineInfos = pageWineInfos(tempList);
-    _controller = ScrollController();
-    _controller.addListener(_scrollListener);
+    scrollController = ScrollController();
+    scrollController.addListener(_scrollListener);
     super.initState();
-  }
-
-  _scrollListener(){
-    if (_controller.offset >= _controller.position.maxScrollExtent &&
-        !_controller.position.outOfRange) {
-      if(isPage == false) return;
-      setState(() {
-        wineInfos = pageWineInfos(tempList);
-      });
-
-    }
-    /* 스크롤이 상단에 닿을때
-    if (_controller.offset <= _controller.position.minScrollExtent &&
-        !_controller.position.outOfRange) {
-      setState(() {
-        print("reach the top");
-      });
-    }
-    */
   }
 
   @override
@@ -82,6 +61,31 @@ class _HomeScreenState extends State<HomeScreen> {
         home: Scaffold(
           body: body(),
         ));
+  }
+
+  //스크롤 이벤트 처리
+  _scrollListener(){
+    //데이터 로딩 후 스크롤의 위치를 다시 offset으로 이동
+    if(scrollController.offset != offset){
+      scrollController.animateTo(offset, duration: Duration(microseconds: 10), curve: Curves.easeOut);
+    }
+    if (scrollController.offset >= scrollController.position.maxScrollExtent &&
+        !scrollController.position.outOfRange) {
+      if(isPage == false) return;
+      setState(() {
+        wineInfos = pageWineInfos(tempList);
+        offset = scrollController.offset;
+        print('offset : ${offset}');
+      });
+    }
+    /* 스크롤이 상단에 닿을때
+    if (_controller.offset <= _controller.position.minScrollExtent &&
+        !_controller.position.outOfRange) {
+      setState(() {
+        print("reach the top");
+      });
+    }
+    */
   }
 
 
@@ -150,7 +154,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (response.statusCode == 200) {
       tempList = parseWineInfos(utf8.decode(response.bodyBytes));
       return tempList;
-      isLoading = false;
     } else {
       print('failed searchWineInfos');
       throw Exception('failed to load data');
@@ -186,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             wineInfos = searchWineInfos();
             pageIndex = tempList.length;
+
           });
         },
       ),
@@ -196,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget body() {
     print('home page body build');
     return  SingleChildScrollView(
-        controller: _controller,
+        controller: scrollController,
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         scrollDirection: Axis.vertical,
         child: Column(
@@ -226,12 +230,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-
                   SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: getDataTable(),
                   )
-
           ],
         ),
     );

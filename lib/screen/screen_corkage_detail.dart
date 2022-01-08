@@ -98,7 +98,6 @@ class _StoreDetailScreen extends State<StoreDetailScreen> {
           Column(
             children: [
               Text('(지도 들어갈 예정)'),
-              Text('#' + corkageStore.area)
             ],
           ),
         ]));

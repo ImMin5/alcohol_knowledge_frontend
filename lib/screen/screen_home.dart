@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 검색창의 텍스트를 위한 변수
   final TextEditingController searchWord = TextEditingController();
   FocusNode focusNode = FocusNode();
-  bool isLoading = false, allLoaded = false;
+  bool isSearched = false;
 
   // wineinfo의 데이터를 저장하기 위한 리스트
   late Future<List<WineInfo>> wineInfos;
@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isAscending = false;
 
   //pagination
-  final int pageSize = 3;
+  final int pageSize = 9;
   int pageIndex= 0;
   bool isPage = true;
 
@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           body: body(),
+          floatingActionButton : WineInfoAddButton(),
         ));
   }
 
@@ -88,6 +89,26 @@ class _HomeScreenState extends State<HomeScreen> {
     */
   }
 
+  //단어를 포함한 pagination
+  Future<List<WineInfo>> pageSearchWineInfos() async {
+    String word = searchWord.text;
+
+    final response = await http.get(
+      'http://localhost:8080/api/wineinfo/pagination?pageIndex=${pageIndex}&pageSize=${pageSize}&word=${searchWord.text}',
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      },
+    );
+    if (response.statusCode == 200) {
+      tempList = parseWineInfos(utf8.decode(response.bodyBytes));
+      return tempList;
+    } else {
+      print('failed searchWineInfos');
+      throw Exception('failed to load data');
+    }
+  }
+
 
   //pageSize의 수 만큼 wineinfo 가져옴
    Future<List<WineInfo>> pageWineInfos(List<WineInfo> originList) async{
@@ -106,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
          tempList.addAll(parseWineInfos(utf8.decode(response.bodyBytes)).toList());
          if(pageIndex == tempList.length){
            isPage = false;
+
          }
          pageIndex = tempList.length;
          for(var i in tempList){
@@ -119,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
        }
      }
      else{
-       print('empty');
+       print('end of data');
        return tempList;
      }
   }
@@ -189,10 +211,25 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             wineInfos = searchWineInfos();
             pageIndex = tempList.length;
-
           });
         },
       ),
+    );
+  }
+
+
+  Widget WineInfoAddButton() {
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        await Navigator.push(context,MaterialPageRoute(
+            builder: (context) => WineInfoFormScreen())).then((value){
+              setState(() {
+                wineInfos = pageWineInfos(tempList);
+              });
+        });
+      },
+      label: Text('와인 정보 등록'),
+      icon: Icon(Icons.wine_bar),
     );
   }
 
@@ -206,43 +243,21 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: <Widget>[
             searchInput(),
-            ElevatedButton(
-                onPressed: () async
-                { setState(() {
-                  wineInfos = pageWineInfos(tempList);
-                });},
-                child: Text('데이터 불러오기기')
-            ),
-            Container(
-              child: ElevatedButton(
-                child: Text('와인 구매정보 입력'),
-                onPressed: () async {
-                  await Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => WineInfoFormScreen()))
-                      .then((value) {
-                        setState(() {
-                          print(value);
-                          print('after wineinfoform');
-                          wineInfos = fetchWineInfos();
-                          Duration(milliseconds: 10);
-                    });
-                  });
-                },
-              ),
-            ),
                   SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: getDataTable(),
-                  )
+                  ),
           ],
+
         ),
+
     );
   }
 
   //메인화면 데이터테이
   Widget getDataTable() {
     print('home page table build');
-    final columns = ['이름', '빈티지', '가격', '용량' '구매장소', '구매일', '설명'];
+    final columns = ['이름', '빈티지', '가격','구매장소','용량' '구매일', '설명'];
     return Center(
       child: FutureBuilder(
           initialData: [],
@@ -251,8 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
             if (snapshot.connectionState == ConnectionState.done) {
               if (snapshot.hasData) {
                     return DataTable(
-                      columnSpacing: 60,
-                      horizontalMargin: 1.0,
+                      columnSpacing: 21,
+                      horizontalMargin: 10.0,
                       sortAscending: isAscending,
                       sortColumnIndex: sortColumnIndex,
                       columns: getColumns((snapshot.data), columns),
@@ -276,13 +291,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     for (var i = 0; i < data.length; i++) {
       List<DataCell> cells = [];
-      cells.add(DataCell(Text(data[i].nameEng + '\n' + data[i].nameKor)));
-      cells.add(DataCell(Text('${data[i].vintage}')));
-      cells.add(DataCell(Text('${data[i].price}')));
-      cells.add(DataCell(Text(data[i].sizeBottle + ' ml')));
-      cells.add(DataCell(Text(data[i].region + ' ' + data[i].store)));
-      cells.add(DataCell(Text('${data[i].datePurchase}')));
-      cells.add(DataCell(Text(data[i].description)));
+      cells.add(DataCell(Container(padding:EdgeInsets.all(1),width:100,child: Text(data[i].nameEng + '\n' + data[i].nameKor,textAlign: TextAlign.left,))));
+      cells.add(DataCell(Text('${data[i].vintage}',textAlign: TextAlign.center)));
+      cells.add(DataCell(Text('${data[i].price}',textAlign: TextAlign.center)));
+      cells.add(DataCell(Text(data[i].region + ' ' + data[i].store,textAlign: TextAlign.center)));
+      cells.add(DataCell(Text(data[i].sizeBottle + ' ml',textAlign: TextAlign.center)));
+      cells.add(DataCell(Text('${data[i].datePurchase}', textAlign: TextAlign.center)));
+      cells.add(DataCell(Text(data[i].description, textAlign: TextAlign.center)));
       dataRow.add(DataRow(cells: cells));
     }
     return dataRow;
@@ -292,7 +307,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DataColumn> getColumns(data, List<String> columns) {
     List<DataColumn> dataColumn = [];
     dataColumn.add(DataColumn(
-        label: Text('이름'),
+        label: Text('이름',  textAlign : TextAlign.center),
+        numeric: false,
         onSort: (columnIndex, ascending) {
           if (columnIndex == 0) {
             setState(() {
@@ -305,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }));
     dataColumn.add(DataColumn(
-        label: Text('빈티지'),
+        label: Text('빈티지', textAlign : TextAlign.center),
         numeric: true,
         onSort: (columnIndex, ascending) {
           if (columnIndex == 1) {
@@ -332,11 +348,11 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
         }));
+    dataColumn.add(DataColumn(label: Text('구매장소')));
     dataColumn.add(DataColumn(
       label: Text('용량'),
       numeric: true,
     ));
-    dataColumn.add(DataColumn(label: Text('구매장소')));
     dataColumn.add(DataColumn(
         label: Text('구매일'),
         onSort: (columnIndex, ascending) {

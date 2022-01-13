@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:alcohol_knowledge_frontend/model/model_corkage_store.dart';
 import 'package:alcohol_knowledge_frontend/screen/screen_corkage_detail.dart';
@@ -96,22 +97,45 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
 
   Widget _SearchInput() {
     return Container(
-      child: const Padding(
-        padding: EdgeInsets.all(8.0),
+      child:  Padding(
+        padding: const EdgeInsets.all(8.0),
         child: TextField(
-          decoration: InputDecoration(
-            labelText: 'Search',
-            prefix: Text('매장명 또는 지역명을 입력하세요'),
+          textInputAction: TextInputAction.go,
+          decoration: const InputDecoration(
+            labelText: '검색',
+            hintText: '매장명 또는 지역명을 입력하세요',
             prefixIcon: Icon(Icons.search),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(25.0))
             ),
           ),
+          onSubmitted: (keyword) {
+            findMatchingStore(keyword);
+          },
         ),
         ),
     );
   }
 
+  void findMatchingStore(String keyword) async {
+    final response = await http.get("http://localhost:8080/api/corkage-store/search?keyword="+keyword);
+    List<CorkageStore> stores = [];
+    if (response.statusCode == 200) {
+      String _text = utf8.decode(response.bodyBytes);
+      if (_text != "") {
+        var dataObjJson = json.decode(_text).cast<Map<String, dynamic>>();
+        print(dataObjJson);
+        stores = dataObjJson.map<CorkageStore>((e) => CorkageStore.fromJson(e)).toList();
+      }
+    }
+    else {
+      throw Exception('Failed to load search result');
+    }
+    setState(() {
+      ckStoreList.clear();
+      ckStoreList.addAll(stores);
+    });
+  }
   List<DataRow> _getRows() {
     List<DataRow> dataRow = [];
     for (var i=0; i < ckStoreList.length; i++) {

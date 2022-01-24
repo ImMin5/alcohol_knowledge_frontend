@@ -21,6 +21,11 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
   ckStoreList: CorkageStore 데이터들을 List 형태로 저장
    */
   List<CorkageStore> ckStoreList = [];
+  final scrollController = ScrollController();
+  int pageIdx = 0;
+  int pageSize = 10;
+  bool isSearchMode = false;
+  String keyword = "";
 
   void _fetchStores() async {
     final response = await http.get("http://localhost:8080/api/corkage-store/list");
@@ -43,12 +48,57 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
     });
   }
 
+  void _fetchStoresPagination() async {
+    final response = await http.get("http://localhost:8080/api/corkage-store/list?idx=$pageIdx&size=$pageSize");
+
+    if (response.statusCode == 200) {
+      var _text = utf8.decode(response.bodyBytes);
+      var dataObjJson =  json.decode(_text).cast<Map<String, dynamic>>();
+      print(dataObjJson);
+
+      var parsedResponse = dataObjJson.map<CorkageStore>((e) => CorkageStore.fromJson(e)).toList();
+
+      // no more data to fetch
+      if (parsedResponse.toString().length == 2) {
+        return;
+      }
+      setState(() {
+        ckStoreList.addAll(parsedResponse);
+        pageIdx = ckStoreList.length;
+      });
+    }
+    else {
+      throw Exception('Failed to load Corkage Stores pageIndex');
+    }
+  }
+  /*
+  Scroll Listener
+   */
+  void _addScrollController() {
+    if (scrollController.offset == scrollController.position.maxScrollExtent
+        && !scrollController.position.outOfRange) {
+      if ( isSearchMode ) {
+          _findMatchingStore();
+        }
+        else {
+          _fetchStoresPagination();
+        }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _fetchStores();
+    _fetchStoresPagination();
+    scrollController.addListener(() {
+      _addScrollController();
+    });
   }
 
+  @override
+  void dispose() {
+    scrollController.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,11 +108,13 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
   }
 
   Widget list() {
-    return Container(
+    return SingleChildScrollView(
+      controller: scrollController,
       child:Column(
         children: [
           _SearchInput(),
           SingleChildScrollView(
+              scrollDirection: Axis.vertical,
               child: _getDataTable(),
           )
         ],
@@ -110,7 +162,10 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
             ),
           ),
           onSubmitted: (keyword) {
-            findMatchingStore(keyword);
+            pageIdx = 0;
+            isSearchMode = true;
+            this.keyword = keyword;
+            _findMatchingStore();
           },
         ),
         ),
@@ -136,6 +191,28 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
       ckStoreList.addAll(stores);
     });
   }
+
+  void _findMatchingStore() async {
+    final response = await http.get("http://localhost:8080/api/corkage-store/search?keyword=$keyword&idx=$pageIdx&size=$pageSize");
+    List<CorkageStore> stores = [];
+    if (response.statusCode == 200) {
+      String _text = utf8.decode(response.bodyBytes);
+      if (_text != "") {
+        var dataObjJson = json.decode(_text).cast<Map<String, dynamic>>();
+        print(dataObjJson);
+        stores = dataObjJson.map<CorkageStore>((e) => CorkageStore.fromJson(e)).toList();
+      }
+    }
+    else {
+      throw Exception('Failed to load search result');
+    }
+    setState(() {
+      if (pageIdx == 0) ckStoreList.clear();
+      ckStoreList.addAll(stores);
+      pageIdx = ckStoreList.length;
+    });
+  }
+
   List<DataRow> _getRows() {
     List<DataRow> dataRow = [];
     for (var i=0; i < ckStoreList.length; i++) {

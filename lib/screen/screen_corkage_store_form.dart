@@ -17,6 +17,7 @@ class _CorkageStoreForm extends State<CorkageStoreForm> {
   // 폼에 부여할 수 있는 유니크한 글로벌 키
   final _formKey = GlobalKey<FormState>();
   String addr="";
+  String name="";
   String desc="";
 
   @override
@@ -31,7 +32,7 @@ class _CorkageStoreForm extends State<CorkageStoreForm> {
               },
               icon: Icon(Icons.arrow_back),
             ),
-            title : Text('Alchol-Knowlege')),
+            title : Text('Alcohol-Knowlege')),
         body: _Form()
         ),
     );
@@ -49,6 +50,7 @@ class _CorkageStoreForm extends State<CorkageStoreForm> {
   void _register() async {
     Map<String, dynamic> requestData = {
       'desc' : desc,
+      'name' : name,
       'addr' : addr,
     };
     http.Response response = await http.post(
@@ -89,6 +91,26 @@ class _CorkageStoreForm extends State<CorkageStoreForm> {
                       return null;
                   },
                 ),
+                )
+              ],
+            ),
+            Row(
+              children: [
+                Container(
+                  width: 50,
+                  child: Text('상호명'),
+                ),
+                Flexible(
+                  child: TextFormField(
+                    onSaved: (String? value) {
+                      name = value!;
+                    },
+                    validator: (String? value) {
+                      if (value!.isEmpty) {
+                        value = '';
+                      }
+                    },
+                  ),
                 )
               ],
             ),

@@ -61,7 +61,15 @@ class _CorkageStoreForm extends State<CorkageStoreForm> {
         body: json.encode(requestData));
 
     int statusCode = response.statusCode;
-    if (statusCode != 200) {
+    if (statusCode == 202) {
+      String msg = response.body.toString();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        duration: Duration(milliseconds: 1000),
+      ));
+      print(response.body);
+    }
+    if (statusCode != 200 && statusCode != 202) {
       throw Exception('Failed to post Corkage Info');
     }
   }

@@ -25,7 +25,11 @@ class _StoreDetailScreen extends State<StoreDetailScreen> {
 
   void fetchStoreInfo(int id) async {
     CorkageStore parsedResponse;
-    final response = await http.get("http://localhost:8080/api/corkage-store?id="+'$id');
+    final response = await http.get("http://localhost:8080/api/corkage-store?id="+'$id',
+        headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        "Access-Control-Allow-Origin" :  "*"}
+    );
     if (response.statusCode == 200) {
       var text = utf8.decode(response.bodyBytes);
       Map<String, dynamic> dataObjJson =  jsonDecode(text);

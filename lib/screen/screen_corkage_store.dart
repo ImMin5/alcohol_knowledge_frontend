@@ -28,7 +28,11 @@ class _CorkageStoreScreen extends State<CorkageStoreScreen> {
   String keyword = "";
 
   void _fetchStores() async {
-    final response = await http.get("http://localhost:8080/api/corkage-store/list");
+    final response = await http.get("http://localhost:8080/api/corkage-store/list",
+    headers: {
+      'Content-Type': 'application/json; charset=UTF-8',
+      "Access-Control-Allow-Origin" :  "*"
+    });
     List<CorkageStore> parsedResponse = [];
     if (response.statusCode == 200) {
       var _text = utf8.decode(response.bodyBytes);

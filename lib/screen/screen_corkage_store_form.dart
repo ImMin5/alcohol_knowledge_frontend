@@ -57,6 +57,7 @@ class _CorkageStoreForm extends State<CorkageStoreForm> {
         Uri.parse('http://localhost:8080/api/corkage-info/new'),
         headers: <String, String> {
           'Content-Type': 'application/json; charset=UTF-8',
+          "Access-Control-Allow-Origin" :  "*"
         },
         body: json.encode(requestData));
 
